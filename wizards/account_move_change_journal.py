@@ -78,6 +78,14 @@ class AccountMoveChangeJournal(models.TransientModel):
             else:
                 wizard.journal_from_id = False
 
+    def _get_related_payments(self):
+        """Get payments related to the selected moves"""
+        self.ensure_one()
+        payments = self.env["account.payment"].search([
+            ("move_id", "in", self.move_ids.ids)
+        ])
+        return payments
+
     @api.depends("move_ids", "journal_to_id", "force_change")
     def _compute_warnings(self):
         for wizard in self:
@@ -130,6 +138,13 @@ class AccountMoveChangeJournal(models.TransientModel):
                         )
                         break
 
+                # Check for related payments
+                related_payments = wizard._get_related_payments()
+                if related_payments:
+                    warnings.append(
+                        f"<li><b>Info:</b> {len(related_payments)} payment(s) will also have their journal changed.</li>"
+                    )
+
             if warnings:
                 wizard.warning_message = "<ul>" + "".join(warnings) + "</ul>"
             else:
@@ -177,6 +192,29 @@ class AccountMoveChangeJournal(models.TransientModel):
 
         return values
 
+    def _change_payment_journal(self, payment):
+        """Change the journal of a related payment"""
+        try:
+            old_journal = payment.journal_id.name
+
+            # Write changes to payment
+            payment.with_context(
+                check_move_validity=False,
+                skip_invoice_sync=True,
+            ).write({
+                "journal_id": self.journal_to_id.id,
+            })
+
+            # Post message in chatter for audit trail
+            message = _(
+                "Journal changed from <b>%s</b> to <b>%s</b> (updated automatically with related move)"
+            ) % (old_journal, self.journal_to_id.name)
+
+            payment.message_post(body=message)
+            return True, None
+        except Exception as e:
+            return False, str(e)
+
     def action_change_journal(self):
         """Execute the journal change"""
         self.ensure_one()
@@ -189,8 +227,12 @@ class AccountMoveChangeJournal(models.TransientModel):
         if not moves_to_change:
             raise UserError(_("No moves to change. All moves already belong to the target journal."))
 
+        # Get related payments before changing moves
+        related_payments = self._get_related_payments()
+
         # Process each move
         changed_moves = self.env["account.move"]
+        changed_payments = self.env["account.payment"]
         errors = []
 
         for move in moves_to_change:
@@ -229,13 +271,25 @@ class AccountMoveChangeJournal(models.TransientModel):
             except Exception as e:
                 errors.append(f"Move {move.name}: {str(e)}")
 
+        # Process related payments
+        for payment in related_payments:
+            if payment.journal_id != self.journal_to_id:
+                success, error = self._change_payment_journal(payment)
+                if success:
+                    changed_payments |= payment
+                else:
+                    errors.append(f"Payment {payment.name}: {error}")
+
         # Show results
         if errors:
-            error_msg = _("Some moves could not be changed:\n") + "\n".join(errors)
-            if changed_moves:
-                error_msg = _(
-                    "%s moves successfully changed.\n\n%s"
-                ) % (len(changed_moves), error_msg)
+            error_msg = _("Some moves/payments could not be changed:\n") + "\n".join(errors)
+            if changed_moves or changed_payments:
+                success_msg = ""
+                if changed_moves:
+                    success_msg += _("%s move(s) successfully changed. ") % len(changed_moves)
+                if changed_payments:
+                    success_msg += _("%s payment(s) successfully changed.") % len(changed_payments)
+                error_msg = success_msg + "\n\n" + error_msg
             raise UserError(error_msg)
 
         # Success message
@@ -243,6 +297,9 @@ class AccountMoveChangeJournal(models.TransientModel):
             len(changed_moves),
             self.journal_to_id.name,
         )
+
+        if changed_payments:
+            message += _("\n%s related payment(s) also changed.") % len(changed_payments)
 
         return {
             "type": "ir.actions.client",

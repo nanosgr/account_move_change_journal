@@ -210,3 +210,39 @@ msgstr ""
 "<li><b>Advertencia:</b> El asiento %s tiene tipo '%s' "
 "pero el tipo del diario destino es '%s'. "
 "Esto puede causar problemas.</li>"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "<li><b>Info:</b> %s payment(s) will also have their journal changed.</li>"
+msgstr "<li><b>Información:</b> %s pago(s) también tendrán su diario cambiado.</li>"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "Journal changed from <b>%s</b> to <b>%s</b> (updated automatically with related move)"
+msgstr "Diario cambiado de <b>%s</b> a <b>%s</b> (actualizado automáticamente con el asiento relacionado)"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "Some moves/payments could not be changed:\\n"
+msgstr "Algunos asientos/pagos no pudieron ser cambiados:\\n"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "%s move(s) successfully changed. "
+msgstr "%s asiento(s) cambiado(s) exitosamente. "
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "%s payment(s) successfully changed."
+msgstr "%s pago(s) cambiado(s) exitosamente."
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "\\n%s related payment(s) also changed."
+msgstr "\\n%s pago(s) relacionado(s) también cambiado(s)."
