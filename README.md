@@ -91,7 +91,7 @@ En una fase posterior se implementará:
 
 ## Autor
 
-Custom Development
+Vikingo Software SAS
 
 ## Licencia
 
