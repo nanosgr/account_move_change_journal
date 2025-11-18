@@ -1,0 +1,212 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# * account_move_change_journal
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 18.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-18 14:00:00\n"
+"PO-Revision-Date: 2025-11-18 14:00:00\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: account_move_change_journal
+#: model:ir.model,name:account_move_change_journal.model_account_move_change_journal
+msgid "Change Journal of Account Move"
+msgstr "Cambiar Diario de Asiento Contable"
+
+#. module: account_move_change_journal
+#: model:ir.actions.act_window,name:account_move_change_journal.action_account_move_change_journal
+#: model_terms:ir.ui.view,arch_db:account_move_change_journal.view_account_move_change_journal_form
+msgid "Change Journal"
+msgstr "Cambiar Diario"
+
+#. module: account_move_change_journal
+#: model_terms:ir.ui.view,arch_db:account_move_change_journal.view_account_move_form_inherit
+msgid "Change Journal"
+msgstr "Cambiar Diario"
+
+#. module: account_move_change_journal
+#: model:ir.model.fields,field_description:account_move_change_journal.field_account_move_change_journal__journal_from_id
+msgid "Current Journal"
+msgstr "Diario Actual"
+
+#. module: account_move_change_journal
+#: model:ir.model.fields,field_description:account_move_change_journal.field_account_move_change_journal__journal_to_id
+msgid "New Journal"
+msgstr "Diario Nuevo"
+
+#. module: account_move_change_journal
+#: model:ir.model.fields,help:account_move_change_journal.field_account_move_change_journal__journal_to_id
+msgid "Select the journal to which you want to move the transactions"
+msgstr "Seleccione el diario al cual desea mover las transacciones"
+
+#. module: account_move_change_journal
+#: model:ir.model.fields,field_description:account_move_change_journal.field_account_move_change_journal__force_change
+msgid "Force Change"
+msgstr "Forzar Cambio"
+
+#. module: account_move_change_journal
+#: model:ir.model.fields,help:account_move_change_journal.field_account_move_change_journal__force_change
+msgid "Force the change even if there are warnings (use with caution)"
+msgstr "Forzar el cambio incluso si hay advertencias (usar con precaución)"
+
+#. module: account_move_change_journal
+#: model:ir.model.fields,field_description:account_move_change_journal.field_account_move_change_journal__warning_message
+msgid "Warnings"
+msgstr "Advertencias"
+
+#. module: account_move_change_journal
+#: model:ir.model.fields,field_description:account_move_change_journal.field_account_move_change_journal__move_count
+msgid "Number of Moves"
+msgstr "Número de Asientos"
+
+#. module: account_move_change_journal
+#: model:ir.model.fields,field_description:account_move_change_journal.field_account_move_change_journal__reset_sequence
+msgid "Reset Sequence"
+msgstr "Resetear Secuencia"
+
+#. module: account_move_change_journal
+#: model:ir.model.fields,help:account_move_change_journal.field_account_move_change_journal__reset_sequence
+msgid "If checked, the move will get a new sequence number from the target journal"
+msgstr "Si está marcado, el asiento obtendrá un nuevo número de secuencia del diario destino"
+
+#. module: account_move_change_journal
+#: model:ir.model.fields,field_description:account_move_change_journal.field_account_move_change_journal__company_id
+msgid "Company"
+msgstr "Compañía"
+
+#. module: account_move_change_journal
+#: model:ir.model.fields,field_description:account_move_change_journal.field_account_move_change_journal__move_ids
+msgid "Moves"
+msgstr "Asientos"
+
+#. module: account_move_change_journal
+#: model_terms:ir.ui.view,arch_db:account_move_change_journal.view_account_move_change_journal_form
+msgid "Cancel"
+msgstr "Cancelar"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "No moves selected to change journal."
+msgstr "No hay asientos seleccionados para cambiar de diario."
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "Please select a target journal."
+msgstr "Por favor seleccione un diario de destino."
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "All selected moves already belong to the target journal '%s'."
+msgstr "Todos los asientos seleccionados ya pertenecen al diario de destino '%s'."
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid ""
+"Cannot change journal of move '%s' because it is posted and locked by hash. "
+"Please use 'Force Change' if you really need to proceed (not recommended)."
+msgstr ""
+"No se puede cambiar el diario del asiento '%s' porque está publicado y bloqueado por hash. "
+"Por favor use 'Forzar Cambio' si realmente necesita proceder (no recomendado)."
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "No moves to change. All moves already belong to the target journal."
+msgstr "No hay asientos para cambiar. Todos los asientos ya pertenecen al diario de destino."
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "Journal changed from <b>%s</b> to <b>%s</b>"
+msgstr "Diario cambiado de <b>%s</b> a <b>%s</b>"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "<br/>Sequence changed from <b>%s</b> to <b>%s</b>"
+msgstr "<br/>Secuencia cambiada de <b>%s</b> a <b>%s</b>"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "Some moves could not be changed:\\n"
+msgstr "Algunos asientos no pudieron ser cambiados:\\n"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "%s moves successfully changed.\\n\\n%s"
+msgstr "%s asientos cambiados exitosamente.\\n\\n%s"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "%s move(s) successfully changed to journal '%s'."
+msgstr "%s asiento(s) cambiado(s) exitosamente al diario '%s'."
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "Success"
+msgstr "Éxito"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "<li>No moves selected</li>"
+msgstr "<li>No hay asientos seleccionados</li>"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid ""
+"<li><b>Warning:</b> %s move(s) are posted. "
+"Changing the journal of posted moves may affect accounting integrity.</li>"
+msgstr ""
+"<li><b>Advertencia:</b> %s asiento(s) están publicados. "
+"Cambiar el diario de asientos publicados puede afectar la integridad contable.</li>"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "<li><b>Info:</b> Selected moves come from %s different journals.</li>"
+msgstr "<li><b>Información:</b> Los asientos seleccionados provienen de %s diarios diferentes.</li>"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid ""
+"<li><b>Warning:</b> %s move(s) have reconciled lines. "
+"This operation will not unreconcile them.</li>"
+msgstr ""
+"<li><b>Advertencia:</b> %s asiento(s) tienen líneas conciliadas. "
+"Esta operación no las desconciliará.</li>"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid "<li><b>Info:</b> Selected moves have different types: %s.</li>"
+msgstr "<li><b>Información:</b> Los asientos seleccionados tienen diferentes tipos: %s.</li>"
+
+#. module: account_move_change_journal
+#: code:addons/account_move_change_journal/wizards/account_move_change_journal.py:0
+#, python-format
+msgid ""
+"<li><b>Warning:</b> Move %s has type '%s' "
+"but target journal type is '%s'. "
+"This may cause issues.</li>"
+msgstr ""
+"<li><b>Advertencia:</b> El asiento %s tiene tipo '%s' "
+"pero el tipo del diario destino es '%s'. "
+"Esto puede causar problemas.</li>"
