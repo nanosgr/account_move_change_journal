@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Wizard Form View -->
+    <record id="view_account_move_change_journal_form" model="ir.ui.view">
+        <field name="name">account.move.change.journal.form</field>
+        <field name="model">account.move.change.journal</field>
+        <field name="arch" type="xml">
+            <form string="Change Journal">
+                <group>
+                    <group>
+                        <field name="move_count" readonly="1"/>
+                        <field name="journal_from_id" readonly="1"
+                               invisible="not journal_from_id"/>
+                        <field name="journal_to_id"
+                               options="{'no_create': True, 'no_create_edit': True}"
+                               domain="[('company_id', '=', company_id)]"/>
+                        <field name="company_id" invisible="1"
+                               compute="_compute_company_id" store="True"/>
+                    </group>
+                    <group>
+                        <field name="reset_sequence"/>
+                        <field name="force_change"/>
+                    </group>
+                </group>
+
+                <group invisible="not warning_message">
+                    <field name="warning_message" nolabel="1"
+                           readonly="1" widget="html"/>
+                </group>
+
+                <field name="move_ids" invisible="1"/>
+
+                <footer>
+                    <button string="Change Journal"
+                            name="action_change_journal"
+                            type="object"
+                            class="btn-primary"
+                            data-hotkey="q"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"
+                            data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_account_move_change_journal" model="ir.actions.act_window">
+        <field name="name">Change Journal</field>
+        <field name="res_model">account.move.change.journal</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_view_types">list,form</field>
+    </record>
+
+</odoo>
