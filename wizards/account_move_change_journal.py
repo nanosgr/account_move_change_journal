@@ -197,13 +197,38 @@ class AccountMoveChangeJournal(models.TransientModel):
         try:
             old_journal = payment.journal_id.name
 
-            # Write changes to payment
+            # Get a compatible payment method line for the new journal
+            available_method_lines = self.journal_to_id._get_available_payment_method_lines(
+                payment.payment_type
+            )
+
+            # Try to find a payment method with the same code, or use the first available
+            new_payment_method_line = False
+            if payment.payment_method_line_id:
+                current_code = payment.payment_method_line_id.code
+                matching_method = available_method_lines.filtered(
+                    lambda l: l.code == current_code
+                )
+                if matching_method:
+                    new_payment_method_line = matching_method[0]
+
+            if not new_payment_method_line and available_method_lines:
+                new_payment_method_line = available_method_lines[0]
+
+            # Prepare values to write
+            payment_vals = {
+                "journal_id": self.journal_to_id.id,
+            }
+
+            if new_payment_method_line:
+                payment_vals["payment_method_line_id"] = new_payment_method_line.id
+
+            # Write changes to payment with context to avoid recomputation issues
             payment.with_context(
                 check_move_validity=False,
                 skip_invoice_sync=True,
-            ).write({
-                "journal_id": self.journal_to_id.id,
-            })
+                skip_account_move_synchronization=True,
+            ).write(payment_vals)
 
             # Post message in chatter for audit trail
             message = _(
@@ -235,6 +260,22 @@ class AccountMoveChangeJournal(models.TransientModel):
         changed_payments = self.env["account.payment"]
         errors = []
 
+        # IMPORTANT: First process payments, then moves
+        # This is because the payment's _synchronize_to_moves method would overwrite
+        # the move's journal_id if we did it the other way around.
+        # By changing payments first with skip_account_move_synchronization=True,
+        # then changing moves, we ensure both stay in sync.
+
+        # Process related payments FIRST
+        for payment in related_payments:
+            if payment.journal_id != self.journal_to_id:
+                success, error = self._change_payment_journal(payment)
+                if success:
+                    changed_payments |= payment
+                else:
+                    errors.append(f"Payment {payment.name}: {error}")
+
+        # Then process moves
         for move in moves_to_change:
             try:
                 old_journal = move.journal_id.name
@@ -247,6 +288,7 @@ class AccountMoveChangeJournal(models.TransientModel):
                 move.with_context(
                     check_move_validity=False,
                     skip_invoice_sync=True,
+                    skip_account_move_synchronization=True,
                 ).write(values)
 
                 # If name was reset and move is posted, trigger renumbering
@@ -270,15 +312,6 @@ class AccountMoveChangeJournal(models.TransientModel):
 
             except Exception as e:
                 errors.append(f"Move {move.name}: {str(e)}")
-
-        # Process related payments
-        for payment in related_payments:
-            if payment.journal_id != self.journal_to_id:
-                success, error = self._change_payment_journal(payment)
-                if success:
-                    changed_payments |= payment
-                else:
-                    errors.append(f"Payment {payment.name}: {error}")
 
         # Show results
         if errors:
