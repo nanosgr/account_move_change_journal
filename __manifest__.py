@@ -1,6 +1,6 @@
 {
     "name": "Account Move Change Journal",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.0.2",
     "category": "Accounting",
     "summary": "Change journal of account moves with proper field recalculation",
     "author": "Vikingo Software SAS",

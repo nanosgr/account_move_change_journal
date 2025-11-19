@@ -145,6 +145,37 @@ class AccountMoveChangeJournal(models.TransientModel):
                         f"<li><b>Info:</b> {len(related_payments)} payment(s) will also have their journal changed.</li>"
                     )
 
+                    # Check if target journal has proper payment method configuration
+                    for payment in related_payments:
+                        available_methods = wizard.journal_to_id._get_available_payment_method_lines(
+                            payment.payment_type
+                        )
+                        if not available_methods:
+                            warnings.append(
+                                f"<li><b>Error:</b> Journal '{wizard.journal_to_id.name}' has no payment methods "
+                                f"configured for {payment.payment_type} payments. "
+                                f"Payment {payment.name} cannot be changed.</li>"
+                            )
+                            break
+
+                        # Check if any method has outstanding account
+                        methods_with_account = available_methods.filtered(lambda l: l.payment_account_id)
+                        if not methods_with_account:
+                            # Check company defaults
+                            company = wizard.journal_to_id.company_id
+                            if payment.payment_type == 'inbound':
+                                has_default = bool(company.account_journal_payment_debit_account_id)
+                            else:
+                                has_default = bool(company.account_journal_payment_credit_account_id)
+
+                            if not has_default:
+                                warnings.append(
+                                    f"<li><b>Error:</b> Journal '{wizard.journal_to_id.name}' payment methods "
+                                    f"have no outstanding account configured, and company has no defaults. "
+                                    f"Please configure the outstanding payments/receipts account.</li>"
+                                )
+                                break
+
             if warnings:
                 wizard.warning_message = "<ul>" + "".join(warnings) + "</ul>"
             else:
@@ -202,33 +233,83 @@ class AccountMoveChangeJournal(models.TransientModel):
                 payment.payment_type
             )
 
-            # Try to find a payment method with the same code, or use the first available
+            # Try to find a payment method with the same code that has an outstanding account
             new_payment_method_line = False
             if payment.payment_method_line_id:
                 current_code = payment.payment_method_line_id.code
+                # First try to find one with the same code AND with payment_account_id
                 matching_method = available_method_lines.filtered(
-                    lambda l: l.code == current_code
+                    lambda l: l.code == current_code and l.payment_account_id
                 )
                 if matching_method:
                     new_payment_method_line = matching_method[0]
+                else:
+                    # If not found with account, try just with same code
+                    matching_method = available_method_lines.filtered(
+                        lambda l: l.code == current_code
+                    )
+                    if matching_method:
+                        new_payment_method_line = matching_method[0]
 
-            if not new_payment_method_line and available_method_lines:
-                new_payment_method_line = available_method_lines[0]
+            # If still not found, try to get any method with payment_account_id
+            if not new_payment_method_line:
+                methods_with_account = available_method_lines.filtered(
+                    lambda l: l.payment_account_id
+                )
+                if methods_with_account:
+                    new_payment_method_line = methods_with_account[0]
+                elif available_method_lines:
+                    new_payment_method_line = available_method_lines[0]
 
-            # Prepare values to write
-            payment_vals = {
-                "journal_id": self.journal_to_id.id,
-            }
+            # Validate that we have a valid payment method
+            if not new_payment_method_line:
+                return False, _(
+                    "The target journal '%s' has no payment methods configured for %s payments."
+                ) % (self.journal_to_id.name, payment.payment_type)
 
-            if new_payment_method_line:
-                payment_vals["payment_method_line_id"] = new_payment_method_line.id
+            # Check if the payment method has an outstanding account
+            # If not, check if the journal has a default account we can use
+            if not new_payment_method_line.payment_account_id:
+                # Check company's default outstanding accounts
+                company = self.journal_to_id.company_id
+                if payment.payment_type == 'inbound':
+                    default_account = company.account_journal_payment_debit_account_id
+                else:
+                    default_account = company.account_journal_payment_credit_account_id
 
-            # Write changes to payment with context to avoid recomputation issues
-            payment.with_context(
-                check_move_validity=False,
-                skip_invoice_sync=True,
-                skip_account_move_synchronization=True,
-            ).write(payment_vals)
+                if not default_account:
+                    return False, _(
+                        "The payment method '%s' in journal '%s' has no outstanding account configured, "
+                        "and the company has no default outstanding account. "
+                        "Please configure the outstanding payments/receipts account in the journal or company settings."
+                    ) % (new_payment_method_line.name, self.journal_to_id.name)
+
+            # Update payment using direct SQL to avoid _synchronize_to_moves
+            # which tries to update readonly fields on posted moves
+            self.env.cr.execute("""
+                UPDATE account_payment
+                SET journal_id = %s,
+                    payment_method_line_id = %s,
+                    write_date = NOW(),
+                    write_uid = %s
+                WHERE id = %s
+            """, (
+                self.journal_to_id.id,
+                new_payment_method_line.id,
+                self.env.uid,
+                payment.id,
+            ))
+
+            # Invalidate cache to ensure Odoo sees the new values
+            payment.invalidate_recordset(['journal_id', 'payment_method_line_id'])
+
+            # Recompute dependent fields
+            payment.invalidate_recordset([
+                'currency_id',
+                'available_payment_method_line_ids',
+                'outstanding_account_id',
+                'company_id',
+            ])
 
             # Post message in chatter for audit trail
             message = _(
