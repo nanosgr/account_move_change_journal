@@ -284,24 +284,39 @@ class AccountMoveChangeJournal(models.TransientModel):
                         "Please configure the outstanding payments/receipts account in the journal or company settings."
                     ) % (new_payment_method_line.name, self.journal_to_id.name)
 
+            # Get the appropriate receiptbook for the new journal's company
+            new_receiptbook_id = False
+            if not payment.is_internal_transfer:
+                # Check if the company uses receiptbooks
+                new_company = self.journal_to_id.company_id
+                if hasattr(new_company, 'use_receiptbook') and new_company.use_receiptbook:
+                    new_receiptbook = self.env["account.payment.receiptbook"].search([
+                        ("partner_type", "=", payment.partner_type),
+                        ("company_id", "=", new_company.id),
+                    ], limit=1)
+                    if new_receiptbook:
+                        new_receiptbook_id = new_receiptbook.id
+
             # Update payment using direct SQL to avoid _synchronize_to_moves
             # which tries to update readonly fields on posted moves
             self.env.cr.execute("""
                 UPDATE account_payment
                 SET journal_id = %s,
                     payment_method_line_id = %s,
+                    receiptbook_id = %s,
                     write_date = NOW(),
                     write_uid = %s
                 WHERE id = %s
             """, (
                 self.journal_to_id.id,
                 new_payment_method_line.id,
+                new_receiptbook_id if new_receiptbook_id else None,
                 self.env.uid,
                 payment.id,
             ))
 
             # Invalidate cache to ensure Odoo sees the new values
-            payment.invalidate_recordset(['journal_id', 'payment_method_line_id'])
+            payment.invalidate_recordset(['journal_id', 'payment_method_line_id', 'receiptbook_id'])
 
             # Recompute dependent fields
             payment.invalidate_recordset([
