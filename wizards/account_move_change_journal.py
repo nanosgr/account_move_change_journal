@@ -304,6 +304,7 @@ class AccountMoveChangeJournal(models.TransientModel):
                 SET journal_id = %s,
                     payment_method_line_id = %s,
                     receiptbook_id = %s,
+                    is_reconciled = %s,
                     write_date = NOW(),
                     write_uid = %s
                 WHERE id = %s
@@ -311,12 +312,13 @@ class AccountMoveChangeJournal(models.TransientModel):
                 self.journal_to_id.id,
                 new_payment_method_line.id,
                 new_receiptbook_id if new_receiptbook_id else None,
+                False,
                 self.env.uid,
                 payment.id,
             ))
 
             # Invalidate cache to ensure Odoo sees the new values
-            payment.invalidate_recordset(['journal_id', 'payment_method_line_id', 'receiptbook_id'])
+            payment.invalidate_recordset(['journal_id', 'payment_method_line_id', 'receiptbook_id', 'is_reconciled'])
 
             # Recompute dependent fields
             payment.invalidate_recordset([
