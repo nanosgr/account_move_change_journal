@@ -297,14 +297,34 @@ class AccountMoveChangeJournal(models.TransientModel):
                     if new_receiptbook:
                         new_receiptbook_id = new_receiptbook.id
 
-            # Update payment using direct SQL to avoid _synchronize_to_moves
+            # STEP 1: Unreconcile the payment lines to reset matched_amount fields
+            # This must be done BEFORE changing the journal
+            # Get the payment's outstanding lines that may be reconciled
+            payment_lines = payment.move_id.line_ids.filtered(
+                lambda x: x.account_type in ('asset_receivable', 'liability_payable',
+                                              'asset_cash', 'liability_credit_card')
+                or x.account_id == payment.outstanding_account_id
+            )
+
+            # Get all partial reconciles for these lines
+            partials_to_remove = self.env['account.partial.reconcile']
+            for line in payment_lines:
+                partials_to_remove |= line.matched_debit_ids
+                partials_to_remove |= line.matched_credit_ids
+
+            # Unlink the partial reconciles (this will reset matched_move_line_ids,
+            # matched_amount, unmatched_amount when computed fields recalculate)
+            if partials_to_remove:
+                partials_to_remove.unlink()
+
+            # STEP 2: Update payment using direct SQL to avoid _synchronize_to_moves
             # which tries to update readonly fields on posted moves
             self.env.cr.execute("""
                 UPDATE account_payment
                 SET journal_id = %s,
                     payment_method_line_id = %s,
                     receiptbook_id = %s,
-                    is_reconciled = %s,
+                    is_reconciled = false,
                     write_date = NOW(),
                     write_uid = %s
                 WHERE id = %s
@@ -312,13 +332,14 @@ class AccountMoveChangeJournal(models.TransientModel):
                 self.journal_to_id.id,
                 new_payment_method_line.id,
                 new_receiptbook_id if new_receiptbook_id else None,
-                False,
                 self.env.uid,
                 payment.id,
             ))
 
             # Invalidate cache to ensure Odoo sees the new values
             payment.invalidate_recordset(['journal_id', 'payment_method_line_id', 'receiptbook_id', 'is_reconciled'])
+            # Also invalidate the computed fields that depend on reconciliation
+            payment.invalidate_recordset(['matched_move_line_ids', 'matched_amount', 'unmatched_amount'])
 
             # Recompute dependent fields
             payment.invalidate_recordset([

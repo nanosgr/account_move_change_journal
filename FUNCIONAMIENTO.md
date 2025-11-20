@@ -43,7 +43,7 @@ UPDATE account_payment
 SET journal_id = <nuevo_journal>,
     payment_method_line_id = <metodo_pago_compatible>,
     receiptbook_id = <talonario_correspondiente>,
-    is_reconciled = FALSE,
+    is_reconciled = false,
     write_date = NOW(),
     write_uid = <usuario>
 WHERE id = <payment_id>
@@ -51,10 +51,22 @@ WHERE id = <payment_id>
 
 ### Reset de Reconciliación
 
-Al cambiar el diario de un pago, el campo `is_reconciled` se establece en `False`. Esto es necesario porque:
+Al cambiar el diario de un pago, se realiza un reset completo de la reconciliación en el siguiente orden:
+
+1. **Eliminación de conciliaciones parciales**: Se eliminan todos los registros de `account.partial.reconcile` asociados a las líneas del pago
+2. **Reset de `is_reconciled`**: Se establece en `false`
+
+Esto produce los siguientes efectos en los campos computed (del módulo `account_payment_pro`):
+- `unmatched_amount` = valor anterior de `matched_amount` (el monto queda disponible)
+- `matched_move_line_ids` = vacío (sin líneas conciliadas)
+- `matched_amount` = 0
+- `matched_amount_untaxed` = 0
+
+Esta operación es necesaria porque:
 - El pago ya no está asociado a las mismas líneas contables del diario original
 - Se debe volver a reconciliar el pago en el nuevo diario
 - Evita inconsistencias en el estado de reconciliación
+- Los campos `matched_*` son computed (no stored) y se recalculan automáticamente al eliminar las conciliaciones parciales
 
 ### Lógica de Selección
 
@@ -119,3 +131,4 @@ Se registra en el chatter de cada registro modificado:
 - **18.0.1.1.0**: Corrección de sincronización Payment ↔ Move
 - **18.0.1.2.0**: Soporte para `receiptbook_id` en pagos
 - **18.0.1.3.0**: Reset de `is_reconciled` a False al cambiar diario del pago
+- **18.0.1.4.0**: Desconciliación completa del pago: elimina `account.partial.reconcile` para resetear `matched_amount`, `matched_move_line_ids`, `unmatched_amount` y `matched_amount_untaxed`
