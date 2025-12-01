@@ -297,20 +297,22 @@ class AccountMoveChangeJournal(models.TransientModel):
                     if new_receiptbook:
                         new_receiptbook_id = new_receiptbook.id
 
-            # STEP 1: Unreconcile the payment lines to reset matched_amount fields
+            # STEP 1: Unreconcile ALL payment lines to reset matched_amount fields
             # This must be done BEFORE changing the journal
-            # Get the payment's outstanding lines that may be reconciled
-            payment_lines = payment.move_id.line_ids.filtered(
-                lambda x: x.account_type in ('asset_receivable', 'liability_payable',
-                                              'asset_cash', 'liability_credit_card')
-                or x.account_id == payment.outstanding_account_id
-            )
+            #
+            # Changed logic: Instead of filtering by account_type, we now get ALL lines
+            # from the payment move and unreconcile any that have partial reconciliations.
+            # This ensures both inbound (receipts/cobranzas) and outbound (payments/pagos)
+            # are handled equally, regardless of their account types.
+            payment_lines = payment.move_id.line_ids
 
-            # Get all partial reconciles for these lines
+            # Get all partial reconciles for ALL lines in the payment move
             partials_to_remove = self.env['account.partial.reconcile']
             for line in payment_lines:
-                partials_to_remove |= line.matched_debit_ids
-                partials_to_remove |= line.matched_credit_ids
+                # Only process lines that are actually reconciled
+                if line.matched_debit_ids or line.matched_credit_ids:
+                    partials_to_remove |= line.matched_debit_ids
+                    partials_to_remove |= line.matched_credit_ids
 
             # Unlink the partial reconciles (this will reset matched_move_line_ids,
             # matched_amount, unmatched_amount when computed fields recalculate)
